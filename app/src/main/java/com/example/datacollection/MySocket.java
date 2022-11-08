@@ -5,8 +5,12 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 public class MySocket {
     private static MySocket instance;
@@ -27,8 +31,8 @@ public class MySocket {
             @Override
             public void run() {
                 try {
-                    socket =new Socket("192.168.0.155", 8081);
-//                    socket =new Socket("172.24.195.52", 8081);
+//                    socket =new Socket("192.168.0.155", 8081);
+                    socket =new Socket("172.24.195.54", 8081);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -42,36 +46,45 @@ public class MySocket {
         return instance;
     }
 
+    private ArrayList<String> data = new ArrayList<>();
 
-    public void sendData(String data){
-//      new Thread(new Runnable() {
-//          @Override
-//          public void run() {
-//              try {
-//                  BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
-//                          socket.getOutputStream()));
-//                  writer.write(data.replace("\n", " ") +"\n");
-//                  writer.flush();
-//              } catch (IOException e) {
-//                  e.printStackTrace();
-//              }
-//          }
-//      }).start();
 
-       es.execute(new Runnable() {
-          @Override
-          public void run() {
-              try {
-                  PrintWriter printWriter = new PrintWriter(new BufferedWriter(new OutputStreamWriter(
-                          socket.getOutputStream())),true);
-                  printWriter.println(data.replace("\n", " "));
+    public void sendData(String item){
+        data.add(item);
+        if(data.size() >= 1){
+            List<String> res = new CopyOnWriteArrayList<>(data);
+            data.clear();
+            es.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
 
-              } catch (IOException e) {
-                  e.printStackTrace();
-              }
-          }
-      });
+                        PrintWriter printWriter = new PrintWriter(new BufferedWriter(new OutputStreamWriter(
+                                socket.getOutputStream())),true);
+                        printWriter.println(res.stream().collect(Collectors.joining("\n")));
 
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
+//
+
+//        es.execute(new Runnable() {
+//            @Override
+//            public void run() {
+//                try {
+//
+//                    PrintWriter printWriter = new PrintWriter(new BufferedWriter(new OutputStreamWriter(
+//                            socket.getOutputStream())),true);
+//                    printWriter.println(item);
+//
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        });
 
     }
 

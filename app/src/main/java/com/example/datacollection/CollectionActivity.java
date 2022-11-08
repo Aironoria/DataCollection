@@ -51,6 +51,7 @@ public class CollectionActivity extends Activity {
 
         recordButton =findViewById(R.id.record_btn);
         mTextView = findViewById(R.id.display_text);
+        recordButton.setKeepScreenOn(true);
         deviceSensors = sensorManager.getSensorList(Sensor.TYPE_ALL);
 
 
@@ -71,7 +72,7 @@ public class CollectionActivity extends Activity {
             }
 //            Utils.saveFile("a.csv","hello");
 //            int time = 2;
-            int time = 20;
+            int time = 200;
             new Thread(){
                 @Override
                 public void run() {
@@ -91,7 +92,7 @@ public class CollectionActivity extends Activity {
                         trim(gyroData,time *100);
                         trim(accData, time *100);
 
-                        saveToFile(saveDir+"/"+gesture);
+//                        saveToFile(saveDir+"/"+gesture);
 
 
                     } catch (InterruptedException e) {
@@ -114,8 +115,8 @@ public class CollectionActivity extends Activity {
                 accData.add(new ACC(event.values[0], event.values[1], event.values[2]));
 //                mTextView.setText("[x:" + event.values[0]  ", y:" + event.values[1] + ", z:" + event.values[2] + "]");
                 count++;
-
-                MySocket.getInstance().sendData( Utils.getTimeInMillSecond() +" " +accData.get(accData.size()-1).toString());
+                if (gyroData.size()>0)
+                    MySocket.getInstance().sendData( Utils.getTimeInMillSecond() +" " +accData.get(accData.size()-1).toString()+gyroData.get(gyroData.size()-1).toString() +";");
             }
 
             @Override
