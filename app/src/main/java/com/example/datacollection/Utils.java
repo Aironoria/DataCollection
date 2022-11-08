@@ -2,6 +2,7 @@ package com.example.datacollection;
 
 
 import android.os.Environment;
+import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -59,6 +60,19 @@ public class Utils {
     public static void trim(ArrayList list, int length){
         while (list.size() > length){
             list.remove(0);
+        }
+    }
+
+
+    public static void countFile(String dir){
+        String download_dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath();
+        File parent = new File (download_dir,dir);
+
+        if (parent.exists()){
+            for (String gesture:parent.list()){
+                File file = new File(parent,gesture);
+                Log.d(gesture+" count",  String.valueOf(file.list().length));
+            }
         }
     }
 }
