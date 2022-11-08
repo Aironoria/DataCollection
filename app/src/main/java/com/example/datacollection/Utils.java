@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Stack;
 
 public class Utils {
 
@@ -61,5 +62,11 @@ public class Utils {
             list.remove(0);
         }
     }
+    private static SimpleDateFormat  simpleDateFormat= new SimpleDateFormat("HH:mm:ss:SSS");
+
+    public static String getTimeInMillSecond(){
+        return simpleDateFormat.format(new Date());
+    }
+
 }
 

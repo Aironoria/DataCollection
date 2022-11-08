@@ -15,7 +15,9 @@ import android.widget.TextView;
 import com.example.datacollection.data.ACC;
 import com.example.datacollection.data.GYRO;
 
+import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class CollectionActivity extends Activity {
@@ -36,6 +38,7 @@ public class CollectionActivity extends Activity {
 
     private Button recordButton;
     private TextView mTextView;
+    private MySocket mySocket;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,7 +69,7 @@ public class CollectionActivity extends Activity {
             }
 //            Utils.saveFile("a.csv","hello");
 //            int time = 2;
-            int time = 2;
+            int time = 20;
             new Thread(){
                 @Override
                 public void run() {
@@ -86,7 +89,7 @@ public class CollectionActivity extends Activity {
                         trim(gyroData,time *100);
                         trim(accData, time *100);
 
-                        saveToFile("10-23-0"+"/"+TOUCH_DOWN);
+//                        saveToFile("10-23-0"+"/"+TOUCH_DOWN);
 
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -95,6 +98,7 @@ public class CollectionActivity extends Activity {
             }.start();
 
         });
+
 
         this.accListener = new SensorEventListener() {
             @Override
@@ -107,6 +111,8 @@ public class CollectionActivity extends Activity {
                 accData.add(new ACC(event.values[0], event.values[1], event.values[2]));
 //                mTextView.setText("[x:" + event.values[0]  ", y:" + event.values[1] + ", z:" + event.values[2] + "]");
                 count++;
+
+                MySocket.getInstance().sendData( Utils.getTimeInMillSecond() +" " +accData.get(accData.size()-1).toString());
             }
 
             @Override
@@ -128,6 +134,7 @@ public class CollectionActivity extends Activity {
             }
         };
 
+        mySocket = MySocket.getInstance();
     }
 
     private void saveToFile(String dir){

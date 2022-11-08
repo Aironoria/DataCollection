@@ -31,6 +31,7 @@ public class MainActivity extends Activity {
     private ActivityMainBinding binding;
     private Button recordButton;
     private Button predictButton;
+    private MySocket mySocket;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -51,6 +52,11 @@ public class MainActivity extends Activity {
             Intent intent = new Intent(this, CollectionActivity.class);
             startActivity(intent);
         });
+
+            mySocket = MySocket.getInstance();
+//            predictButton.setOnClickListener(v->{
+//                 mySocket.sendData("hello");
+//            });
 
 
     }
