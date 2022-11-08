@@ -34,10 +34,12 @@ public class CollectionActivity extends Activity {
     final String TOUCH_DOWN = "touchdown";
     final String CLICK = "click";
     final String TOUCH_UP = "touchup";
-    final String IDLE = "idle";
+    final String IDLE = "nothing";
 
     private Button recordButton;
     private TextView mTextView;
+    private String saveDir="10-23-0";
+    private String gesture = IDLE;
     private MySocket mySocket;
 
     @Override
@@ -89,7 +91,8 @@ public class CollectionActivity extends Activity {
                         trim(gyroData,time *100);
                         trim(accData, time *100);
 
-//                        saveToFile("10-23-0"+"/"+TOUCH_DOWN);
+                        saveToFile(saveDir+"/"+gesture);
+
 
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -156,6 +159,8 @@ public class CollectionActivity extends Activity {
         accData.clear();
         gyroData.clear();
         count=0;
+
+        Utils.countFile(saveDir);
     }
 
     private void trim(ArrayList list, int length){

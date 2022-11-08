@@ -42,12 +42,12 @@ public class PredictionActivity extends Activity {
     private ArrayList<GYRO> gyroData= new ArrayList();
     private ArrayList<ACC> accData = new ArrayList<>();
     private int windowSize = 49;
-    private int sliding = 10;
+    private int sliding = 25;
 
     private Module model;
     String predictedResult;
     boolean useGyro = true;
-
+    String lastState = "nothing";
     int inputChannel = 6;
 
     @Override
@@ -57,10 +57,10 @@ public class PredictionActivity extends Activity {
         predictionButton = findViewById(R.id.predict_btn);
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         textView = findViewById(R.id.display_text);
-
+        textView.setKeepScreenOn(true);
         predictionButton.setOnClickListener(view -> { registerSensorListener();});
         try {
-            model = LiteModuleLoader.load(assetFilePath(this, "10-12_augmented.ptl"));
+            model = LiteModuleLoader.load(assetFilePath(this, "10-27_augmented.ptl"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -76,7 +76,7 @@ public class PredictionActivity extends Activity {
 
     private void predict(){
         long startTime = System.currentTimeMillis();
-        float[] inputArray = fftAndIntegrateArray();
+        float[] inputArray = integrateArray();
         Log.d("FFT TIME", String.valueOf(System.currentTimeMillis() - startTime));
 
         startTime = System.currentTimeMillis();
@@ -94,15 +94,20 @@ public class PredictionActivity extends Activity {
                 maxScoreIdx = i;
             }
         }
-//        String[]  labels = { "click", "down","nothing","up"};
-        String[]  labels = { "touch","nontouch"};
+        String[]  labels = { "click", "nothing","down","up"};
+//        String[]  labels = { "touch","nontouch"};
 
         predictedResult = labels[maxScoreIdx];
         Log.d("PREDICT TIME", String.valueOf(System.currentTimeMillis() - startTime));
 
+        if (lastState.equals("click"))
+            if (predictedResult.equals("up") ||predictedResult.equals("down"))
+                predictedResult = "click";
+
         runOnUiThread(()->{
             textView.setText(predictedResult);
         });
+        lastState = predictedResult;
     }
 
 
@@ -217,18 +222,20 @@ public class PredictionActivity extends Activity {
 
     private float[] integrateArray(){
 
-        float[] res = new float[windowSize *6];
+        float[] res = new float[windowSize *inputChannel];
+        double[] mean ={0.88370824, -1.0719419, 9.571041, -0.0018323545, -0.0061315685, -0.0150832655};
+        double[]std ={0.32794556, 0.38917893, 0.35336846, 0.099675156, 0.117989756, 0.06230596};
 
         for (int i =0; i < windowSize; i++){
             ACC accItem = accData.get(i);
             GYRO gyroItem = gyroData.get(i);
 
-            res[ windowSize *0 + i] =(float) accItem.getX();
-            res[ windowSize *1 + i] =(float) accItem.getY();
-            res[ windowSize *2 + i] =(float) accItem.getZ();
-            res[ windowSize *3 + i] =(float) gyroItem.getGx();
-            res[ windowSize *4 + i] =(float) gyroItem.getGy();
-            res[ windowSize *5 + i] =(float) gyroItem.getGz();
+            res[ windowSize *0 + i] =(float)  ((accItem.getX() -mean[0]) /std[0]);
+            res[ windowSize *1 + i] =(float)  ((accItem.getY() -mean[1]) /std[1]);
+            res[ windowSize *2 + i] =(float)  ((accItem.getZ() -mean[2]) /std[2]);
+            res[ windowSize *3 + i] =(float)((gyroItem.getGx() -mean[3]) /std[3]);
+            res[ windowSize *4 + i] =(float)((gyroItem.getGy() -mean[4]) /std[4]);
+            res[ windowSize *5 + i] =(float)((gyroItem.getGz() -mean[5]) /std[5]);
         }
         return res;
     }
