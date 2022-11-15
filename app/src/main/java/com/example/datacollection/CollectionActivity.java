@@ -51,10 +51,9 @@ public class CollectionActivity extends Activity {
 
         recordButton =findViewById(R.id.record_btn);
         mTextView = findViewById(R.id.display_text);
-        recordButton.setKeepScreenOn(true);
         deviceSensors = sensorManager.getSensorList(Sensor.TYPE_ALL);
 
-
+        recordButton.setKeepScreenOn(true);
 
         recordButton.setOnClickListener(v->{
             //get data
@@ -72,7 +71,7 @@ public class CollectionActivity extends Activity {
             }
 //            Utils.saveFile("a.csv","hello");
 //            int time = 2;
-            int time = 200;
+            int time = 2000;
             new Thread(){
                 @Override
                 public void run() {
@@ -92,7 +91,7 @@ public class CollectionActivity extends Activity {
                         trim(gyroData,time *100);
                         trim(accData, time *100);
 
-//                        saveToFile(saveDir+"/"+gesture);
+                        saveToFile(saveDir+"/"+gesture);
 
 
                     } catch (InterruptedException e) {

@@ -31,8 +31,14 @@ public class MySocket {
             @Override
             public void run() {
                 try {
+                    //home
 //                    socket =new Socket("192.168.0.155", 8081);
-                    socket =new Socket("172.24.195.54", 8081);
+//
+//                    lab
+//                    socket =new Socket("172.24.195.52", 8082);
+//
+//                    personal hotspot
+                    socket = new Socket("172.20.10.5",8081);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
