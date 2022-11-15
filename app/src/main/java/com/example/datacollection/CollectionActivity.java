@@ -1,5 +1,6 @@
 package com.example.datacollection;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.Activity;
@@ -8,6 +9,9 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.os.VibrationAttributes;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
@@ -35,20 +39,28 @@ public class CollectionActivity extends Activity {
     final String CLICK = "click";
     final String TOUCH_UP = "touchup";
     final String IDLE = "nothing";
-
+    final String SWIPE_UP="swipe_up";
+    final String SWIPE_DOWN="swipe_down";
+    final String SWIPE_LEFT="swipe_left";
+    final String SWIPE_RIGHT="swipe_right";
+    final String PINCH="pinch";
+    final String SPREAD="spread";
+    final String ZOOM_IN="zoom_in";
+    final String ZOOM_OUT="zoom_out";
     private Button recordButton;
     private TextView mTextView;
-    private String saveDir="10-23-0";
-    private String gesture = IDLE;
+    private String saveDir="11-15-0";
+    private String gesture = SPREAD;
     private MySocket mySocket;
-
+    private Vibrator vib ;
+    private boolean realTimeDisplay = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_collection);
 
         this.sensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
-
+        vib =  (Vibrator) getSystemService(VIBRATOR_SERVICE);
         recordButton =findViewById(R.id.record_btn);
         mTextView = findViewById(R.id.display_text);
         deviceSensors = sensorManager.getSensorList(Sensor.TYPE_ALL);
@@ -60,7 +72,7 @@ public class CollectionActivity extends Activity {
             //save file
             gyro= sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
             acc = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-
+            count=0;
             if (acc !=null){
                 sensorManager.registerListener(accListener,acc,10000);
                 sensorManager.registerListener(gyroListener,gyro,10000);
@@ -70,8 +82,11 @@ public class CollectionActivity extends Activity {
 
             }
 //            Utils.saveFile("a.csv","hello");
-//            int time = 2;
-            int time = 2000;
+            int time;
+            if(realTimeDisplay)
+                time=2000;
+            else time =2;
+//            int time = 2000;
             new Thread(){
                 @Override
                 public void run() {
@@ -91,7 +106,10 @@ public class CollectionActivity extends Activity {
                         trim(gyroData,time *100);
                         trim(accData, time *100);
 
-                        saveToFile(saveDir+"/"+gesture);
+                       if (!realTimeDisplay){
+                           saveToFile(saveDir+"/"+gesture);
+                       }
+
 
 
                     } catch (InterruptedException e) {
@@ -106,6 +124,9 @@ public class CollectionActivity extends Activity {
         this.accListener = new SensorEventListener() {
             @Override
             public void onSensorChanged(SensorEvent event) {
+                if (count ==150){
+                    vib.vibrate(VibrationEffect.createOneShot(50,VibrationEffect.DEFAULT_AMPLITUDE));
+                }
                 if (count%150 ==0){
                     runOnUiThread(()->{
                         mTextView.setText(String.valueOf(count/150));
@@ -114,7 +135,7 @@ public class CollectionActivity extends Activity {
                 accData.add(new ACC(event.values[0], event.values[1], event.values[2]));
 //                mTextView.setText("[x:" + event.values[0]  ", y:" + event.values[1] + ", z:" + event.values[2] + "]");
                 count++;
-                if (gyroData.size()>0)
+                if (realTimeDisplay & gyroData.size()>0)
                     MySocket.getInstance().sendData( Utils.getTimeInMillSecond() +" " +accData.get(accData.size()-1).toString()+gyroData.get(gyroData.size()-1).toString() +";");
             }
 
