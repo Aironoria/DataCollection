@@ -42,13 +42,30 @@ public class PredictionActivity extends Activity {
     private ArrayList<GYRO> gyroData= new ArrayList();
     private ArrayList<ACC> accData = new ArrayList<>();
     private int windowSize = 49;
-    private int sliding = 25;
+    private int sliding = 8;
 
     private Module model;
     String predictedResult;
     boolean useGyro = true;
     String lastState = "nothing";
     int inputChannel = 6;
+
+    final String TOUCH_DOWN = "touchdown";
+    final String CLICK = "click";
+    final String TOUCH_UP = "touchup";
+    final String IDLE = "nothing";
+    final String SWIPE_UP="swipe_up";
+    final String SWIPE_DOWN="swipe_down";
+    final String SWIPE_LEFT="swipe_left";
+    final String SWIPE_RIGHT="swipe_right";
+    final String PINCH="pinch";
+    final String SPREAD="spread";
+    final String ZOOM_IN="zoom_in";
+    final String ZOOM_OUT="zoom_out";
+    String[]  labels = {"click", "nothing",PINCH,SPREAD,SWIPE_DOWN,SWIPE_LEFT,SWIPE_RIGHT,SWIPE_UP,"down","up"};
+    private int[] label_continous_count = new int[]{0,0,0,0,0,0,0,0,0,0};
+    int a =3;
+    private int[] threshold = new int[]{a,a,a,a,a,a,a,a,a,a};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,7 +77,7 @@ public class PredictionActivity extends Activity {
         textView.setKeepScreenOn(true);
         predictionButton.setOnClickListener(view -> { registerSensorListener();});
         try {
-            model = LiteModuleLoader.load(assetFilePath(this, "10-27_augmented.ptl"));
+            model = LiteModuleLoader.load(assetFilePath(this, "11-15_sampled.ptl"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -94,19 +111,24 @@ public class PredictionActivity extends Activity {
                 maxScoreIdx = i;
             }
         }
-        String[]  labels = { "click", "nothing","down","up"};
+//        String[]  labels = { "click", "nothing","down","up"};
 //        String[]  labels = { "touch","nontouch"};
 
         predictedResult = labels[maxScoreIdx];
+
+        if (predictedResult.equals(lastState))
+            label_continous_count[maxScoreIdx]++;
+
         Log.d("PREDICT TIME", String.valueOf(System.currentTimeMillis() - startTime));
 
-        if (lastState.equals("click"))
-            if (predictedResult.equals("up") ||predictedResult.equals("down"))
-                predictedResult = "click";
+//        if (lastState.equals("click"))
+//            if (predictedResult.equals("up") ||predictedResult.equals("down"))
+//                predictedResult = "click";
 
-        runOnUiThread(()->{
-            textView.setText(predictedResult);
-        });
+       if (label_continous_count[maxScoreIdx] >=threshold[maxScoreIdx])
+           runOnUiThread(()->{
+               textView.setText(predictedResult);
+           });
         lastState = predictedResult;
     }
 
