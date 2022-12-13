@@ -1,10 +1,7 @@
 package com.example.datacollection;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -16,7 +13,6 @@ import android.widget.TextView;
 
 import com.example.datacollection.data.ACC;
 import com.example.datacollection.data.GYRO;
-import com.google.android.gms.common.util.ArrayUtils;
 
 import org.pytorch.IValue;
 import org.pytorch.LiteModuleLoader;
@@ -29,9 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Random;
 
 public class PredictionActivity extends Activity {
     private SensorManager sensorManager;
@@ -41,7 +34,7 @@ public class PredictionActivity extends Activity {
 
     private ArrayList<GYRO> gyroData= new ArrayList();
     private ArrayList<ACC> accData = new ArrayList<>();
-    private int windowSize = 49;
+    private int windowSize = 48;
     private int sliding = 8;
 
     private Module model;
@@ -62,7 +55,9 @@ public class PredictionActivity extends Activity {
     final String SPREAD="spread";
     final String ZOOM_IN="zoom_in";
     final String ZOOM_OUT="zoom_out";
-    String[]  labels = {"click", "nothing",PINCH,SPREAD,SWIPE_DOWN,SWIPE_LEFT,SWIPE_RIGHT,SWIPE_UP,"down","up"};
+//    String[]  labels = {"click", "nothing",PINCH,SPREAD,SWIPE_DOWN,SWIPE_LEFT,SWIPE_RIGHT,SWIPE_UP,"down","up"};
+//    String[]  labels = {SWIPE_DOWN,SWIPE_UP,"click",SPREAD,SWIPE_RIGHT,PINCH,SWIPE_LEFT,"nothing", "nothing","up"};
+    String[] labels ={"scroll_down","click","scroll_up","spread","swipe_right","pinch","swipe_left","touchdown","nothing","touchup"};
     private int[] label_continous_count = new int[]{0,0,0,0,0,0,0,0,0,0};
     int a =3;
     private int[] threshold = new int[]{a,a,a,a,a,a,a,a,a,a};
@@ -75,9 +70,11 @@ public class PredictionActivity extends Activity {
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         textView = findViewById(R.id.display_text);
         textView.setKeepScreenOn(true);
-        predictionButton.setOnClickListener(view -> { registerSensorListener();});
+        predictionButton.setOnClickListener(view -> {
+            clearData();
+            registerSensorListener();});
         try {
-            model = LiteModuleLoader.load(assetFilePath(this, "11-15_sampled.ptl"));
+            model = LiteModuleLoader.load(assetFilePath(this, "12-04.ptl"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -93,11 +90,13 @@ public class PredictionActivity extends Activity {
 
     private void predict(){
         long startTime = System.currentTimeMillis();
-        float[] inputArray = integrateArray();
+        float[] inputArray = integrateForRNN();
         Log.d("FFT TIME", String.valueOf(System.currentTimeMillis() - startTime));
 
         startTime = System.currentTimeMillis();
-        Tensor input =Tensor.fromBlob(inputArray, new long[]{1,inputChannel,7,7});
+//        Tensor input =Tensor.fromBlob(inputArray, new long[]{1,inputChannel,7,7});
+        Tensor input =Tensor.fromBlob(inputArray, new long[]{1,windowSize/3,inputChannel * 3});
+        System.out.println();
         final Tensor outputTensor = model.forward(IValue.from(input)).toTensor();
         // getting tensor content as java array of floats
         final float[] scores = outputTensor.getDataAsFloatArray();
@@ -162,6 +161,7 @@ public class PredictionActivity extends Activity {
                 Utils.trim(accData,windowSize);
                 Utils.trim(gyroData,windowSize);
                 predict();
+                //unregisterSensorListener();
                 count = 0;
             }
         }
@@ -241,6 +241,32 @@ public class PredictionActivity extends Activity {
         return res;
     }
 
+    private float[] integrateForRNN(){
+        float[] res = new float[windowSize *inputChannel];
+        double[] mean ={0.88370824, -1.0719419, 9.571041, -0.0018323545, -0.0061315685, -0.0150832655};
+        double[]std ={0.32794556, 0.38917893, 0.35336846, 0.099675156, 0.117989756, 0.06230596};
+
+        for (int i =0; i < windowSize; i++){
+            ACC accItem = accData.get(i);
+            GYRO gyroItem = gyroData.get(i);
+
+            res[i*6 +0] =(float)  ((accItem.getX() -mean[0]) /std[0]);
+            res[i*6 +1] =(float)  ((accItem.getY() -mean[1]) /std[1]);
+            res[i*6 +2] =(float)  ((accItem.getZ() -mean[2]) /std[2]);
+            res[i*6 +3] =(float)((gyroItem.getGx() -mean[3]) /std[3]);
+            res[i*6 +4] =(float)((gyroItem.getGy() -mean[4]) /std[4]);
+            res[i*6 +5] =(float)((gyroItem.getGz() -mean[5]) /std[5]);
+        }
+        return res;
+    }
+
+    private void clearData(){
+        Utils.trim(accData,0);
+        Utils.trim(gyroData,0);
+        runOnUiThread(()->{
+            textView.setText("Predicting");
+        });
+    }
 
     private float[] integrateArray(){
 

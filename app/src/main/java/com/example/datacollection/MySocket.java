@@ -17,25 +17,15 @@ public class MySocket {
     public Socket socket;
     private static ExecutorService es = Executors.newSingleThreadExecutor();
     private MySocket (){
-//        es.execute(new Runnable() {
-//            @Override
-//            public void run() {
-//                try {
-//                    socket =new Socket("192.168.0.155", 8081);
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//        });
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
                     //home
-//                    socket =new Socket("192.168.0.155", 8081);
+                    socket =new Socket("192.168.0.207", 8081);
 //
 //                    lab
-                    socket =new Socket("172.24.195.54", 8081);
+//                    socket =new Socket("172.24.195.54", 8081);
 //
 //                    personal hotspot
 //                    socket = new Socket("172.20.10.5",8081);
@@ -47,7 +37,7 @@ public class MySocket {
     }
     public static MySocket getInstance(){
         if (instance ==null){
-            //instance = new MySocket();
+            instance = new MySocket();
         }
         return instance;
     }
@@ -56,25 +46,6 @@ public class MySocket {
 
 
     public void sendData(String item){
-//        data.add(item);
-//        data.size();
-//        List<String> res = new CopyOnWriteArrayList<>(data);
-//        data.clear();
-//        es.execute(new Runnable() {
-//            @Override
-//            public void run() {
-//                try {
-//
-//                    PrintWriter printWriter = new PrintWriter(new BufferedWriter(new OutputStreamWriter(
-//                            socket.getOutputStream())),true);
-//                    printWriter.println(res.stream().collect(Collectors.joining("\n")));
-//
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//        });
-        //
 
         es.execute(new Runnable() {
             @Override

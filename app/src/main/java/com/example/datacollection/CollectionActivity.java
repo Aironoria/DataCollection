@@ -45,15 +45,17 @@ public class CollectionActivity extends Activity {
     final String SWIPE_RIGHT="swipe_right";
     final String PINCH="pinch";
     final String SPREAD="spread";
-    final String ZOOM_IN="zoom_in";
-    final String ZOOM_OUT="zoom_out";
+    final String SCROLL_DOWN="scroll_down";
+    final String SCROLL_UP="scroll_up";
     private Button recordButton;
     private TextView mTextView;
-    private String saveDir="11-15-0";
-    private String gesture = SPREAD;
+
+
+    private String saveDir="12-04";
+    private String gesture = SWIPE_RIGHT;
     private MySocket mySocket;
     private Vibrator vib ;
-    private boolean realTimeDisplay = false;
+    private boolean realTimeDisplay = true;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -125,7 +127,7 @@ public class CollectionActivity extends Activity {
             @Override
             public void onSensorChanged(SensorEvent event) {
                 if (count ==150){
-                    vib.vibrate(VibrationEffect.createOneShot(50,VibrationEffect.DEFAULT_AMPLITUDE));
+//                    vib.vibrate(VibrationEffect.createOneShot(50,VibrationEffect.DEFAULT_AMPLITUDE));
                 }
                 if (count%150 ==0){
                     runOnUiThread(()->{

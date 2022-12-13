@@ -7,7 +7,7 @@ public class GYRO {
 
     @Override
     public String toString() {
-        return  gx +","+ gy +","+ gz+",";
+        return  gx +","+ gy +","+ gz;
     }
 
     public GYRO(double gx, double gy, double gz) {
