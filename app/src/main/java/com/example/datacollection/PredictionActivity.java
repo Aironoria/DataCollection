@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class PredictionActivity extends Activity {
     private SensorManager sensorManager;
@@ -34,8 +35,8 @@ public class PredictionActivity extends Activity {
 
     private ArrayList<GYRO> gyroData= new ArrayList();
     private ArrayList<ACC> accData = new ArrayList<>();
-    private int windowSize = 48;
-    private int sliding = 8;
+    private int windowSize = 65;
+    private int sliding = 20;
 
     private Module model;
     String predictedResult;
@@ -57,10 +58,12 @@ public class PredictionActivity extends Activity {
     final String ZOOM_OUT="zoom_out";
 //    String[]  labels = {"click", "nothing",PINCH,SPREAD,SWIPE_DOWN,SWIPE_LEFT,SWIPE_RIGHT,SWIPE_UP,"down","up"};
 //    String[]  labels = {SWIPE_DOWN,SWIPE_UP,"click",SPREAD,SWIPE_RIGHT,PINCH,SWIPE_LEFT,"nothing", "nothing","up"};
-    String[] labels ={"scroll_down","click","scroll_up","spread","swipe_right","pinch","swipe_left","touchdown","nothing","touchup"};
-    private int[] label_continous_count = new int[]{0,0,0,0,0,0,0,0,0,0};
-    int a =3;
-    private int[] threshold = new int[]{a,a,a,a,a,a,a,a,a,a};
+    //String[] labels ={"scroll_down","click","scroll_up","spread","swipe_right","pinch","swipe_left","touchdown","nothing","touchup"};
+    String[] labels ={"scroll_down","swipe_down","swipe_up","click","scroll_up","spread","swipe_right","pinch","swipe_left","touchdown","nothing","touchup"};
+    private int[] label_continous_count = new int[]{0,0,0,0,0,0,0,0,0,0,0,0};
+    int a =0;
+    private int[] threshold = new int[]{a,a,a,a,a,a,a,a,a,a,a,a};
+    StringBuilder predictedResultString = new StringBuilder();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,10 +74,25 @@ public class PredictionActivity extends Activity {
         textView = findViewById(R.id.display_text);
         textView.setKeepScreenOn(true);
         predictionButton.setOnClickListener(view -> {
-            clearData();
-            registerSensorListener();});
+
+
+            new Thread(){
+                @Override
+                public void run() {
+                    super.run();
+                    try {
+                        Thread.sleep(0*1000);
+                        registerSensorListener();
+//                        Thread.sleep(20 *1000);
+//                        unregisterSensorListener();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }.start();
+        });
         try {
-            model = LiteModuleLoader.load(assetFilePath(this, "12-04.ptl"));
+            model = LiteModuleLoader.load(assetFilePath(this, "12-04_len65.ptl"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -92,48 +110,74 @@ public class PredictionActivity extends Activity {
         long startTime = System.currentTimeMillis();
         float[] inputArray = integrateForRNN();
         Log.d("FFT TIME", String.valueOf(System.currentTimeMillis() - startTime));
-
+        int sequence_len =5;
         startTime = System.currentTimeMillis();
 //        Tensor input =Tensor.fromBlob(inputArray, new long[]{1,inputChannel,7,7});
-        Tensor input =Tensor.fromBlob(inputArray, new long[]{1,windowSize/3,inputChannel * 3});
+        Tensor input =Tensor.fromBlob(inputArray, new long[]{1,windowSize/sequence_len,inputChannel * sequence_len});
         System.out.println();
         final Tensor outputTensor = model.forward(IValue.from(input)).toTensor();
         // getting tensor content as java array of floats
         final float[] scores = outputTensor.getDataAsFloatArray();
 //        Log.d("OUTPUT", Arrays.toString(scores));
         // searching for the index with maximum score
-        float maxScore = -Float.MAX_VALUE;
-        int maxScoreIdx = -1;
-        for (int i = 0; i < scores.length; i++) {
-            if (scores[i] > maxScore) {
-                maxScore = scores[i];
-                maxScoreIdx = i;
+        int[] sortedIndices = sortAndReturnIndices(scores);
+        int maxScoreIdx= sortedIndices[0];
+        predictedResult = labels[maxScoreIdx];
+//
+        if (scores[maxScoreIdx] > 0.9)
+            predictedResult = labels[maxScoreIdx];
+        else
+            predictedResult = lastState;
+
+
+//        for (int i=0; i< scores.length;i++){
+//            predictedResultString.append(String.format("%-14s",labels[sortedIndices[i]]) )
+//                    .append(":")
+//                    .append(String.format("%.4f",scores[sortedIndices[i]]))
+//                    .append(",");
+//        }
+//        predictedResultString.append("\n");
+
+//
+//        if (predictedResult.equals(CLICK) | predictedResult.equals(TOUCH_DOWN) | predictedResult.equals(TOUCH_UP)){
+//
+//        }else{
+//            if (predictedResult.equals(IDLE)){
+//
+//            }
+//            else if (!lastState.equals(IDLE)){
+//                predictedResult = lastState;
+//            }
+//        }
+
+
+        if (!predictedResult.equals(IDLE)){
+            if (predictedResult.equals(TOUCH_UP)& lastState.equals(CLICK))
+                predictedResult = lastState;
+            else if (!lastState.equals(IDLE)){
+                predictedResult = lastState;
             }
         }
-//        String[]  labels = { "click", "nothing","down","up"};
-//        String[]  labels = { "touch","nontouch"};
 
-        predictedResult = labels[maxScoreIdx];
+//        if (predictedResult.equals(lastState))
+//            label_continous_count[maxScoreIdx]++;
+//        else
+//            Arrays.fill(label_continous_count, 0);
 
-        if (predictedResult.equals(lastState))
-            label_continous_count[maxScoreIdx]++;
 
-        Log.d("PREDICT TIME", String.valueOf(System.currentTimeMillis() - startTime));
-
-//        if (lastState.equals("click"))
-//            if (predictedResult.equals("up") ||predictedResult.equals("down"))
-//                predictedResult = "click";
 
        if (label_continous_count[maxScoreIdx] >=threshold[maxScoreIdx])
            runOnUiThread(()->{
                textView.setText(predictedResult);
            });
         lastState = predictedResult;
+        Log.d("PREDICT TIME", String.valueOf(System.currentTimeMillis() - startTime));
     }
 
 
 
     private void registerSensorListener(){
+        clearData();
         sensorManager.registerListener(sensorListener, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),10000);
         sensorManager.registerListener(sensorListener, sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE),10000);
 
@@ -141,6 +185,8 @@ public class PredictionActivity extends Activity {
 
     private void unregisterSensorListener(){
         sensorManager.unregisterListener(sensorListener);
+        String title=Utils.getTime();
+        Utils.saveFile( "predictedResult/"+title+".csv",   predictedResultString.toString());
     }
 
     private SensorEventListener sensorListener = new SensorEventListener() {
@@ -161,7 +207,6 @@ public class PredictionActivity extends Activity {
                 Utils.trim(accData,windowSize);
                 Utils.trim(gyroData,windowSize);
                 predict();
-                //unregisterSensorListener();
                 count = 0;
             }
         }
@@ -263,6 +308,7 @@ public class PredictionActivity extends Activity {
     private void clearData(){
         Utils.trim(accData,0);
         Utils.trim(gyroData,0);
+        predictedResultString.setLength(0);
         runOnUiThread(()->{
             textView.setText("Predicting");
         });
@@ -285,6 +331,24 @@ public class PredictionActivity extends Activity {
             res[ windowSize *4 + i] =(float)((gyroItem.getGy() -mean[4]) /std[4]);
             res[ windowSize *5 + i] =(float)((gyroItem.getGz() -mean[5]) /std[5]);
         }
+        return res;
+    }
+    private  int[] sortAndReturnIndices(float[] array){
+        int[] res = new int[array.length];
+        for (int i =0; i< res.length;i++){
+            res[i]= i;
+        }
+
+        for(int i =0; i< res.length;i++) {
+            for (int j = res.length-1; j >i; j--) {
+                if (array[res[j]] > array[res[j - 1]]) {
+                    int temp = res[j];
+                    res[j] = res[j - 1];
+                    res[j - 1] = temp;
+                }
+            }
+        }
+
         return res;
     }
 
