@@ -44,7 +44,8 @@ public class MainActivity extends Activity {
         recordButton = findViewById(R.id.record_btn);
 
         predictButton.setOnClickListener(view -> {
-            Intent intent = new Intent(this, PredictionActivity.class);
+//            Intent intent = new Intent(this, PredictionActivity.class);
+            Intent intent = new Intent(this, RealtimeActivity.class);
             startActivity(intent);
         });
 

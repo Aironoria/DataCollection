@@ -36,7 +36,7 @@ public class PredictionActivity extends Activity {
     private ArrayList<GYRO> gyroData= new ArrayList();
     private ArrayList<ACC> accData = new ArrayList<>();
     private int windowSize = 65;
-    private int sliding = 20;
+    private int sliding = 8;
 
     private Module model;
     String predictedResult;
@@ -58,11 +58,11 @@ public class PredictionActivity extends Activity {
     final String ZOOM_OUT="zoom_out";
 //    String[]  labels = {"click", "nothing",PINCH,SPREAD,SWIPE_DOWN,SWIPE_LEFT,SWIPE_RIGHT,SWIPE_UP,"down","up"};
 //    String[]  labels = {SWIPE_DOWN,SWIPE_UP,"click",SPREAD,SWIPE_RIGHT,PINCH,SWIPE_LEFT,"nothing", "nothing","up"};
-    //String[] labels ={"scroll_down","click","scroll_up","spread","swipe_right","pinch","swipe_left","touchdown","nothing","touchup"};
-    String[] labels ={"scroll_down","swipe_down","swipe_up","click","scroll_up","spread","swipe_right","pinch","swipe_left","touchdown","nothing","touchup"};
-    private int[] label_continous_count = new int[]{0,0,0,0,0,0,0,0,0,0,0,0};
-    int a =0;
-    private int[] threshold = new int[]{a,a,a,a,a,a,a,a,a,a,a,a};
+    String[] labels ={"scroll_down","click","scroll_up","spread","swipe_right","pinch","swipe_left","touchdown","nothing","touchup"};
+//    String[] labels ={"scroll_down","swipe_down","swipe_up","click","scroll_up","spread","swipe_right","pinch","swipe_left","touchdown","nothing","touchup"};
+    private int[] label_continous_count = new int[]{0,0,0,0,0,0,0,0,0,0};
+    int a =1;
+    private int[] threshold = new int[]{a,1,4,a,a,2,a,1,a,1};
     StringBuilder predictedResultString = new StringBuilder();
 
     @Override
@@ -124,19 +124,19 @@ public class PredictionActivity extends Activity {
         int maxScoreIdx= sortedIndices[0];
         predictedResult = labels[maxScoreIdx];
 //
-        if (scores[maxScoreIdx] > 0.9)
+        if (scores[maxScoreIdx] > 0.95)
             predictedResult = labels[maxScoreIdx];
         else
             predictedResult = lastState;
 
 
-//        for (int i=0; i< scores.length;i++){
-//            predictedResultString.append(String.format("%-14s",labels[sortedIndices[i]]) )
-//                    .append(":")
-//                    .append(String.format("%.4f",scores[sortedIndices[i]]))
-//                    .append(",");
-//        }
-//        predictedResultString.append("\n");
+        for (int i=0; i< scores.length;i++){
+            predictedResultString.append(String.format("%-14s",labels[sortedIndices[i]]) )
+                    .append(":")
+                    .append(String.format("%.4f",scores[sortedIndices[i]]))
+                    .append(",");
+        }
+        predictedResultString.append("\n");
 
 //
 //        if (predictedResult.equals(CLICK) | predictedResult.equals(TOUCH_DOWN) | predictedResult.equals(TOUCH_UP)){
@@ -159,10 +159,10 @@ public class PredictionActivity extends Activity {
             }
         }
 
-//        if (predictedResult.equals(lastState))
-//            label_continous_count[maxScoreIdx]++;
-//        else
-//            Arrays.fill(label_continous_count, 0);
+        if (predictedResult.equals(lastState))
+            label_continous_count[maxScoreIdx]++;
+        else
+            Arrays.fill(label_continous_count, 0);
 
 
 

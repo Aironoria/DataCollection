@@ -39,8 +39,8 @@ public class CollectionActivity extends Activity {
     final String CLICK = "click";
     final String TOUCH_UP = "touchup";
     final String IDLE = "nothing";
-    final String SWIPE_UP="swipe_up";
-    final String SWIPE_DOWN="swipe_down";
+//    final String SWIPE_UP="swipe_up";
+//    final String SWIPE_DOWN="swipe_down";
     final String SWIPE_LEFT="swipe_left";
     final String SWIPE_RIGHT="swipe_right";
     final String PINCH="pinch";
@@ -49,14 +49,17 @@ public class CollectionActivity extends Activity {
     final String SCROLL_UP="scroll_up";
     private Button recordButton;
     private TextView mTextView;
+    //yt zqc zy yjb
 
+    //qyq  ywn
 
-    private String saveDir="12-04";
-    private String gesture = SWIPE_RIGHT;
+    private String saveDir="cjy_new";
+    private String gesture ="double_click";
     private MySocket mySocket;
     private Vibrator vib ;
-    private boolean realTimeDisplay = true;
+    private boolean realTimeDisplay = false;
     @Override
+    //圆通 swipe left 比较怪
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_collection);
@@ -68,7 +71,7 @@ public class CollectionActivity extends Activity {
         deviceSensors = sensorManager.getSensorList(Sensor.TYPE_ALL);
 
         recordButton.setKeepScreenOn(true);
-
+        Utils.countFile(saveDir);
         recordButton.setOnClickListener(v->{
             //get data
             //save file
@@ -137,8 +140,8 @@ public class CollectionActivity extends Activity {
                 accData.add(new ACC(event.values[0], event.values[1], event.values[2]));
 //                mTextView.setText("[x:" + event.values[0]  ", y:" + event.values[1] + ", z:" + event.values[2] + "]");
                 count++;
-                if (realTimeDisplay & gyroData.size()>0)
-                    MySocket.getInstance().sendData( Utils.getTimeInMillSecond() +" " +accData.get(accData.size()-1).toString()+gyroData.get(gyroData.size()-1).toString() +";");
+//                if (realTimeDisplay & gyroData.size()>0)
+//                    MySocket.getInstance().sendData( Utils.getTimeInMillSecond() +" " +accData.get(accData.size()-1).toString()+gyroData.get(gyroData.size()-1).toString() +";");
             }
 
             @Override
