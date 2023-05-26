@@ -5,6 +5,7 @@ package com.example.datacollection;
 //ble
 //https://github.com/itanbp/android-ble-peripheral-central/blob/master/app/src/main/java/itan/com/bluetoothle/PeripheralRoleActivity.java
 //https://proandroiddev.com/android-bluetooth-low-energy-building-chat-app-with-ble-d2700956715b
+//https://qiita.com/poruruba/items/f74c447dd61be26b4ac2
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -12,6 +13,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattServer;
 import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothGattService;
@@ -31,6 +33,7 @@ import com.example.datacollection.data.ACC;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 @SuppressLint("MissingPermission")
 public class BluetoothServer {
@@ -40,6 +43,7 @@ public class BluetoothServer {
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothGattServer bluetoothGattServer;
     private BluetoothLeAdvertiser bluetoothLeAdvertiser;
+    private BluetoothDevice macbook;
 
     private BluetoothGattService service;
     private BluetoothGattCharacteristic accCharacteristic;
@@ -69,7 +73,7 @@ public class BluetoothServer {
 
     private void startAdvertising() {
         AdvertiseSettings advertiseSettings = new AdvertiseSettings.Builder()
-                .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_POWER)
+                .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
                 .setTimeout(0)
                 .build();
 
@@ -116,6 +120,11 @@ public class BluetoothServer {
         accCharacteristic = new BluetoothGattCharacteristic(accCharacteristicUUID,
                 BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_NOTIFY,
                 BluetoothGattCharacteristic.PERMISSION_READ);
+
+        BluetoothGattDescriptor descriptor = new BluetoothGattDescriptor(UUID.fromString("00002902-0000-1000-8000-00805F9B34FB"),
+                BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
+        descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+        accCharacteristic.addDescriptor(descriptor);
         service.addCharacteristic(accCharacteristic);
         bluetoothGattServer.addService(service);
 
@@ -132,13 +141,21 @@ public class BluetoothServer {
             return false;
         }
 
+        if (macbook == null) {
+            Log.e("BluetoothServer", "macbook is null");
+            return false;
+        }
+
         ByteBuffer bb = ByteBuffer.allocate(24);
         bb.order(ByteOrder.LITTLE_ENDIAN);
         bb.putDouble(acc.getX());
         bb.putDouble(acc.getY());
         bb.putDouble(acc.getZ());
+
         accCharacteristic.setValue(bb.array());
-        bluetoothGattServer.notifyCharacteristicChanged(null, accCharacteristic, false);
+
+//        accCharacteristic.setValue("hello".getBytes(StandardCharsets.UTF_8));
+        bluetoothGattServer.notifyCharacteristicChanged(macbook, accCharacteristic, false);
         return true;
     }
 
@@ -146,7 +163,11 @@ public class BluetoothServer {
         @Override
         public void onConnectionStateChange(BluetoothDevice device, int status,
                                             int newState) {
+
             super.onConnectionStateChange(device, status, newState);
+            if (newState == BluetoothGatt.STATE_CONNECTED) {
+                macbook = device;
+            }
             Log.d("BluetoothServer", "onConnectionStateChange: " + status + " -> " + newState);
         }
 
@@ -157,6 +178,14 @@ public class BluetoothServer {
             Log.d("BluetoothServer", "onCharacteristicReadRequest: " + characteristic.getUuid());
             bluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS,
                     offset, characteristic.getValue());
+        }
+
+
+        @Override
+        public void onNotificationSent(BluetoothDevice device, int status) {
+            super.onNotificationSent(device, status);
+            bluetoothGattServer.sendResponse(device, 0, BluetoothGatt.GATT_SUCCESS,
+                    0, null);
         }
     };
 

@@ -163,7 +163,7 @@ public class CollectionActivity extends Activity {
             }
         };
 
-        mySocket = MySocket.getInstance();
+//        mySocket = MySocket.getInstance();
     }
 
     private void saveToFile(String dir){

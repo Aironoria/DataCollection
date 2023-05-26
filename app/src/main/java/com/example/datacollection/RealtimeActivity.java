@@ -89,8 +89,11 @@ public class RealtimeActivity extends Activity {
         this.accListener = new SensorEventListener() {
             @Override
             public void onSensorChanged(SensorEvent event) {
+                ACC acc  = new ACC(event.values[0], event.values[1], event.values[2]);
+                bluetoothServer.sendAccData(acc);
+
 //                accData.add(new ACC(event.values[0], event.values[1], event.values[2]));
-                bluetoothServer.sendAccData(new ACC(1,2,3));
+//                bluetoothServer.sendAccData(new ACC(1,2,3));
             }
 
             @Override

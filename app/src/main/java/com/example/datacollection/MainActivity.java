@@ -54,7 +54,7 @@ public class MainActivity extends Activity {
             startActivity(intent);
         });
 
-            mySocket = MySocket.getInstance();
+//            mySocket = MySocket.getInstance();
 //            predictButton.setOnClickListener(v->{
 //                 mySocket.sendData("hello");
 //            });
