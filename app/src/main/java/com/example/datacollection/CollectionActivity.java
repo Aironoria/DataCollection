@@ -53,8 +53,8 @@ public class CollectionActivity extends Activity {
 
     //qyq  ywn
 
-    private String saveDir="cjy_new";
-    private String gesture ="double_click";
+    private String saveDir="cjy_01";
+    private String gesture =SPREAD;
     private MySocket mySocket;
     private Vibrator vib ;
     private boolean realTimeDisplay = false;

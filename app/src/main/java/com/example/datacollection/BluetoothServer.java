@@ -30,6 +30,7 @@ import android.util.Log;
 import androidx.core.app.ActivityCompat;
 
 import com.example.datacollection.data.ACC;
+import com.example.datacollection.data.GYRO;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -46,10 +47,12 @@ public class BluetoothServer {
     private BluetoothDevice macbook;
 
     private BluetoothGattService service;
+    private BluetoothGattService service1;
     private BluetoothGattCharacteristic accCharacteristic;
     private BluetoothGattCharacteristic gyroCharacteristic;
 
     private UUID serviceUUID = UUID.fromString("0000fff0-0000-1000-8000-00805f9b34fb");
+//    private UUID serviceUUID1 = UUID.fromString("0000fff3-0000-1000-8000-00805f9b34fb");
     private UUID accCharacteristicUUID = UUID.fromString("0000fff1-0000-1000-8000-00805f9b34fb");
     private UUID gyroCharacteristicUUID = UUID.fromString("0000fff2-0000-1000-8000-00805f9b34fb");
 
@@ -118,20 +121,31 @@ public class BluetoothServer {
         bluetoothGattServer = bluetoothManager.openGattServer(parentContext, gattServerCallback);
         service = new BluetoothGattService(serviceUUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
         accCharacteristic = new BluetoothGattCharacteristic(accCharacteristicUUID,
-                BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_NOTIFY,
-                BluetoothGattCharacteristic.PERMISSION_READ);
+                 BluetoothGattCharacteristic.PROPERTY_NOTIFY|BluetoothGattCharacteristic.PROPERTY_READ|BluetoothGattCharacteristic.PROPERTY_WRITE,
+                BluetoothGattCharacteristic.PERMISSION_READ|BluetoothGattCharacteristic.PERMISSION_WRITE);
+
 
         BluetoothGattDescriptor descriptor = new BluetoothGattDescriptor(UUID.fromString("00002902-0000-1000-8000-00805F9B34FB"),
                 BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
-        descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+//        descriptor.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
+        descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
         accCharacteristic.addDescriptor(descriptor);
         service.addCharacteristic(accCharacteristic);
+
+
+
+
+
+
         bluetoothGattServer.addService(service);
+
+
+
 
 
     }
 
-    public Boolean sendAccData(ACC acc) {
+    public Boolean sendData(ACC acc, GYRO gyro) {
         if (bluetoothGattServer == null) {
             Log.e("BluetoothServer", "bluetoothGattServer is null");
             return false;
@@ -146,16 +160,21 @@ public class BluetoothServer {
             return false;
         }
 
-        ByteBuffer bb = ByteBuffer.allocate(24);
+        ByteBuffer bb = ByteBuffer.allocate(24*2);
         bb.order(ByteOrder.LITTLE_ENDIAN);
         bb.putDouble(acc.getX());
         bb.putDouble(acc.getY());
         bb.putDouble(acc.getZ());
+        bb.putDouble(gyro.getGx());
+        bb.putDouble(gyro.getGy());
+        bb.putDouble(gyro.getGz());
 
         accCharacteristic.setValue(bb.array());
 
 //        accCharacteristic.setValue("hello".getBytes(StandardCharsets.UTF_8));
+
         bluetoothGattServer.notifyCharacteristicChanged(macbook, accCharacteristic, false);
+
         return true;
     }
 
@@ -167,6 +186,7 @@ public class BluetoothServer {
             super.onConnectionStateChange(device, status, newState);
             if (newState == BluetoothGatt.STATE_CONNECTED) {
                 macbook = device;
+
             }
             Log.d("BluetoothServer", "onConnectionStateChange: " + status + " -> " + newState);
         }
@@ -175,18 +195,29 @@ public class BluetoothServer {
         public void onCharacteristicReadRequest(BluetoothDevice device, int requestId,
                                                 int offset, BluetoothGattCharacteristic characteristic) {
             super.onCharacteristicReadRequest(device, requestId, offset, characteristic);
-            Log.d("BluetoothServer", "onCharacteristicReadRequest: " + characteristic.getUuid());
+            Log.d("BluetoothServer", "onCharacteristicReadRequest: " + requestId);
             bluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS,
                     offset, characteristic.getValue());
         }
 
-
+        @Override
+        public void onCharacteristicWriteRequest(BluetoothDevice device, int requestId, BluetoothGattCharacteristic characteristic, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
+            super.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite, responseNeeded, offset, value);
+            Log.d("BluetoothServer", "onCharacteristicWriteRequest: " + requestId);
+            bluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS,
+                    offset, characteristic.getValue());
+        }
+        int i = 0;
         @Override
         public void onNotificationSent(BluetoothDevice device, int status) {
             super.onNotificationSent(device, status);
-            bluetoothGattServer.sendResponse(device, 0, BluetoothGatt.GATT_SUCCESS,
-                    0, null);
+             bluetoothGattServer.sendResponse(device, 1, BluetoothGatt.GATT_SUCCESS, 0, null);
+//               bluetoothGattServer.sendResponse(device, 1, BluetoothGatt.GATT_SUCCESS, 0, null);
+//            Log.d("BluetoothServer", "onNotificationSent: " + status);
+
         }
+
+
     };
 
 }

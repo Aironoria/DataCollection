@@ -35,10 +35,9 @@ public class RealtimeActivity extends Activity {
     private SensorEventListener accListener;
     private SensorEventListener gyroListener;
     private Sensor acc;
+    private GYRO gyroData = new GYRO(0,0,0);
     private Sensor gyro;
     private int count =0;
-    private ArrayList<GYRO> gyroData= new ArrayList();
-    private ArrayList<ACC> accData = new ArrayList<>();
     List<Sensor> deviceSensors;
 
     private Button startButton;
@@ -90,7 +89,7 @@ public class RealtimeActivity extends Activity {
             @Override
             public void onSensorChanged(SensorEvent event) {
                 ACC acc  = new ACC(event.values[0], event.values[1], event.values[2]);
-                bluetoothServer.sendAccData(acc);
+                bluetoothServer.sendData(acc,gyroData);
 
 //                accData.add(new ACC(event.values[0], event.values[1], event.values[2]));
 //                bluetoothServer.sendAccData(new ACC(1,2,3));
@@ -105,6 +104,7 @@ public class RealtimeActivity extends Activity {
         this.gyroListener = new SensorEventListener() {
             @Override
             public void onSensorChanged(SensorEvent event) {
+                gyroData = new GYRO(event.values[0], event.values[1], event.values[2]);
 //                gyroData.add(new GYRO(event.values[0], event.values[1], event.values[2]));
             }
 
@@ -114,7 +114,6 @@ public class RealtimeActivity extends Activity {
             }
         };
 
-//        mySocket = MySocket.getInstance();
     }
 
 
